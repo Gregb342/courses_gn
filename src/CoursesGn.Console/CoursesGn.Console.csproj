@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CoursesGn.Domain\CoursesGn.Domain.csproj" />
+    <ProjectReference Include="..\CoursesGn.Application\CoursesGn.Application.csproj" />
+    <ProjectReference Include="..\CoursesGn.Infrastructure\CoursesGn.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

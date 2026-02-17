@@ -1,0 +1,21 @@
+# Build results
+**/bin/
+**/obj/
+
+# IDE
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+# OS
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# Cartes générées
+cartes_*/
+
+# Rider
+.idea/
+*.sln.iml
