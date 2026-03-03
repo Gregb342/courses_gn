@@ -31,17 +31,17 @@ public static class RenderingConstants
     public const float ArrowHeadRatio = 0.14f;
 
     // ── Numérotation ──
-    public const float StepNumberFontSize = 14f;
-    public const float StepNumberOffset = 16f;
+    public const float StepNumberFontSize = 32f;
+    public const float StepNumberOffset = 28f;
 
     // ── Noms de couleurs le long des flèches (Niveau 2) ──
-    public const float ColorLabelFontSize = 20f;
-    public const float ColorLabelOffset = 28f;
+    public const float ColorLabelFontSize = 32f;
+    public const float ColorLabelOffset = 36f;
 
     // ── Encadré couleurs séparé (Niveau 4-5) ──
-    public const float ColorBoxFontSize = 26f;
-    public const float ColorBoxPadding = 24f;
-    public const float ColorBoxLineHeight = 40f;
+    public const float ColorBoxFontSize = 38f;
+    public const float ColorBoxPadding = 30f;
+    public const float ColorBoxLineHeight = 54f;
     public const float ColorBoxCornerRadius = 10f;
 
     // ── Niveau 1 : rendu textuel ──

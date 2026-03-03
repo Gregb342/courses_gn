@@ -10,5 +10,6 @@ public interface IFileExporter
     /// <summary>
     /// Écrit les données dans un fichier et retourne le chemin complet du fichier créé.
     /// </summary>
-    string Export(byte[] data, OutputFormat format, Difficulty difficulty, int index, string outputDirectory);
+    /// <param name="isPnj">Si true, ajoute "pnj" dans le nom du fichier.</param>
+    string Export(byte[] data, OutputFormat format, Difficulty difficulty, int index, string outputDirectory, bool isPnj = false);
 }

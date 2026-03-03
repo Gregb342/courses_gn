@@ -17,12 +17,12 @@ public class SkiaCardRenderer : ICardRenderer
     private readonly ArrowDrawer _arrowDrawer = new();
     private readonly CompassRenderer _compassRenderer = new();
 
-    public byte[] Render(NavigationCourse course, GenerationParameters parameters)
+    public byte[] Render(NavigationCourse course, GenerationParameters parameters, string cardLabel)
     {
         return parameters.OutputFormat switch
         {
-            OutputFormat.Jpg => RenderAsImage(course, parameters),
-            OutputFormat.Pdf => RenderAsPdf(course, parameters),
+            OutputFormat.Jpg => RenderAsImage(course, parameters, cardLabel),
+            OutputFormat.Pdf => RenderAsPdf(course, parameters, cardLabel),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(parameters.OutputFormat), parameters.OutputFormat, "Format non supporté.")
         };
@@ -32,7 +32,7 @@ public class SkiaCardRenderer : ICardRenderer
     //  Rendu JPG
     // ──────────────────────────────────────────────
 
-    private byte[] RenderAsImage(NavigationCourse course, GenerationParameters parameters)
+    private byte[] RenderAsImage(NavigationCourse course, GenerationParameters parameters, string cardLabel)
     {
         var imageInfo = new SKImageInfo(
             RenderingConstants.A4WidthPixels,
@@ -41,7 +41,7 @@ public class SkiaCardRenderer : ICardRenderer
         using var surface = SKSurface.Create(imageInfo);
         var canvas = surface.Canvas;
 
-        RenderContent(canvas, course, parameters);
+        RenderContent(canvas, course, parameters, cardLabel);
 
         using var image = surface.Snapshot();
         using var data = image.Encode(SKEncodedImageFormat.Jpeg, RenderingConstants.JpegQuality);
@@ -52,7 +52,7 @@ public class SkiaCardRenderer : ICardRenderer
     //  Rendu PDF
     // ──────────────────────────────────────────────
 
-    private byte[] RenderAsPdf(NavigationCourse course, GenerationParameters parameters)
+    private byte[] RenderAsPdf(NavigationCourse course, GenerationParameters parameters, string cardLabel)
     {
         var memoryStream = new MemoryStream();
 
@@ -68,7 +68,7 @@ public class SkiaCardRenderer : ICardRenderer
                 float scaleY = RenderingConstants.A4HeightPoints / RenderingConstants.A4HeightPixels;
                 canvas.Scale(scaleX, scaleY);
 
-                RenderContent(canvas, course, parameters);
+                RenderContent(canvas, course, parameters, cardLabel);
 
                 document.EndPage();
                 document.Close();
@@ -85,9 +85,13 @@ public class SkiaCardRenderer : ICardRenderer
     private void RenderContent(
         SKCanvas canvas,
         NavigationCourse course,
-        GenerationParameters parameters)
+        GenerationParameters parameters,
+        string cardLabel)
     {
         canvas.Clear(SKColors.White);
+
+        // Dessiner le label (Carte PJ / Carte PNJ) en haut à droite
+        DrawCardLabel(canvas, cardLabel);
 
         if (parameters.Difficulty == Difficulty.Level1_Easy)
         {
@@ -96,6 +100,30 @@ public class SkiaCardRenderer : ICardRenderer
         }
 
         RenderGraphicLevel(canvas, course, parameters);
+    }
+
+    // ──────────────────────────────────────────────
+    //  Label Carte PJ / Carte PNJ
+    // ──────────────────────────────────────────────
+
+    private static void DrawCardLabel(SKCanvas canvas, string cardLabel)
+    {
+        if (string.IsNullOrWhiteSpace(cardLabel))
+            return;
+
+        using var paint = new SKPaint
+        {
+            Color = SKColors.Black,
+            TextSize = 28f,
+            IsAntialias = true,
+            TextAlign = SKTextAlign.Right,
+            Typeface = FontProvider.GetTypeface()
+        };
+
+        float x = RenderingConstants.A4WidthPixels - RenderingConstants.Margin;
+        float y = 38f;
+
+        canvas.DrawText(cardLabel, x, y, paint);
     }
 
     // ══════════════════════════════════════════════
@@ -299,7 +327,7 @@ public class SkiaCardRenderer : ICardRenderer
         float boxX = RenderingConstants.Margin;
         float boxY = RenderingConstants.A4HeightPixels - RenderingConstants.Margin - boxHeight;
 
-        // Fond et bordure
+        // Fond (sans bordure)
         using var bgPaint = new SKPaint
         {
             Color = new SKColor(250, 250, 250),
@@ -307,15 +335,6 @@ public class SkiaCardRenderer : ICardRenderer
             IsAntialias = true
         };
         canvas.DrawRoundRect(boxX, boxY, boxWidth, boxHeight, cornerRadius, cornerRadius, bgPaint);
-
-        using var borderPaint = new SKPaint
-        {
-            Color = new SKColor(160, 160, 160),
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 1.2f,
-            IsAntialias = true
-        };
-        canvas.DrawRoundRect(boxX, boxY, boxWidth, boxHeight, cornerRadius, cornerRadius, borderPaint);
 
         // Texte des couleurs
         float textX = boxX + padding;

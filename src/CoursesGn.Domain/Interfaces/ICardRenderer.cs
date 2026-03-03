@@ -11,5 +11,6 @@ public interface ICardRenderer
     /// <summary>
     /// Génère le contenu binaire de la carte au format demandé (PDF ou JPG).
     /// </summary>
-    byte[] Render(NavigationCourse course, GenerationParameters parameters);
+    /// <param name="cardLabel">Label affiché dans un coin de la carte (ex : "Carte PJ", "Carte PNJ").</param>
+    byte[] Render(NavigationCourse course, GenerationParameters parameters, string cardLabel);
 }

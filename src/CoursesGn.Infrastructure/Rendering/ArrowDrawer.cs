@@ -10,6 +10,8 @@ namespace CoursesGn.Infrastructure.Rendering;
 /// </summary>
 public class ArrowDrawer
 {
+    private static readonly Lazy<SKBitmap> _handDrawnArrowHead = new(() => LoadEmbeddedImage("fleche.png"));
+
     /// <summary>
     /// Dessine une flèche complète.
     /// forceBlack : si true, la flèche est noire (niveaux 4-5).
@@ -42,7 +44,10 @@ public class ArrowDrawer
             canvas.DrawLine(x1, y1, x2, y2, paint);
 
         // ── Pointe de la flèche ──
-        DrawArrowHead(canvas, x1, y1, x2, y2, skColor);
+        if (style == ArrowStyle.HandDrawn)
+            DrawHandDrawnArrowHead(canvas, x1, y1, x2, y2, skColor);
+        else
+            DrawArrowHead(canvas, x1, y1, x2, y2, skColor);
 
         // ── Numéro d'étape ──
         DrawStepNumber(canvas, x1, y1, x2, y2, arrow, skColor);
@@ -270,5 +275,80 @@ public class ArrowDrawer
         ghostPaint.StrokeWidth = paint.StrokeWidth * 0.5f;
         ghostPaint.Color = paint.Color.WithAlpha(140);
         canvas.DrawPath(path2, ghostPaint);
+    }
+
+    // ──────────────────────────────────────────────
+    //  Pointe de flèche dessinée à la main (PNG)
+    // ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Dessine la pointe de flèche à partir du PNG embarqué "fleche.png".
+    /// L'image source pointe vers le haut (angle = -π/2).
+    /// On la teinte à la couleur voulue, on la redimensionne et on la pivote
+    /// pour correspondre à la direction de la flèche.
+    /// </summary>
+    private static void DrawHandDrawnArrowHead(
+        SKCanvas canvas,
+        float x1, float y1,
+        float x2, float y2,
+        SKColor color)
+    {
+        var source = _handDrawnArrowHead.Value;
+        if (source == null) return;
+
+        // Taille cible de la pointe (en pixels)
+        float arrowLength = MathF.Sqrt(MathF.Pow(x2 - x1, 2) + MathF.Pow(y2 - y1, 2));
+        float headSize = Math.Clamp(
+            arrowLength * 0.22f,
+            24f,
+            52f);
+
+        // Calculer l'échelle pour redimensionner le PNG
+        float scale = headSize / source.Width;
+
+        // L'image source pointe vers le haut → angle de référence = -π/2
+        // On doit pivoter de (angleFlèche - (-π/2)) = (angleFlèche + π/2)
+        double arrowAngle = Math.Atan2(y2 - y1, x2 - x1);
+        float rotationDegrees = (float)((arrowAngle + Math.PI / 2.0) * 180.0 / Math.PI);
+
+        canvas.Save();
+
+        // Déplacer l'origine au bout de la flèche
+        canvas.Translate(x2, y2);
+        canvas.RotateDegrees(rotationDegrees);
+        canvas.Scale(scale);
+
+        // Dessiner l'image centrée sur le point de la pointe
+        // On décale un peu vers le bas pour que la pointe touche le bout de la flèche
+        float drawX = -source.Width / 2f;
+        float drawY = -source.Height * 0.3f;
+
+        // Teinter l'image avec la couleur voulue
+        using var tintPaint = new SKPaint
+        {
+            IsAntialias = true,
+            ColorFilter = SKColorFilter.CreateBlendMode(color, SKBlendMode.SrcIn)
+        };
+
+        canvas.DrawBitmap(source, drawX, drawY, tintPaint);
+
+        canvas.Restore();
+    }
+
+    // ──────────────────────────────────────────────
+    //  Chargement de ressource embarquée
+    // ──────────────────────────────────────────────
+
+    private static SKBitmap LoadEmbeddedImage(string fileName)
+    {
+        var assembly = typeof(ArrowDrawer).Assembly;
+        var resourceName = assembly.GetManifestResourceNames()
+            .FirstOrDefault(n => n.EndsWith(fileName, StringComparison.OrdinalIgnoreCase));
+
+        if (resourceName == null)
+            throw new FileNotFoundException($"Ressource embarquée introuvable : {fileName}");
+
+        using var stream = assembly.GetManifestResourceStream(resourceName)!;
+        return SKBitmap.Decode(stream);
     }
 }

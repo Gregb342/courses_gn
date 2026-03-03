@@ -17,6 +17,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\boussole.png" />
     <EmbeddedResource Include="Resources\boussole_sans_points_cardinaux.png" />
+    <EmbeddedResource Include="Resources\fleche.png" />
     <EmbeddedResource Include="Resources\Fonts\*.ttf" />
     <EmbeddedResource Include="Resources\Fonts\*.otf" />
   </ItemGroup>

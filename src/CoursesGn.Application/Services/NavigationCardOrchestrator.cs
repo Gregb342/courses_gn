@@ -25,11 +25,23 @@ public class NavigationCardOrchestrator
 
     /// <summary>
     /// Génère toutes les cartes demandées et les exporte dans le répertoire spécifié.
+    /// Pour chaque parcours, génère une carte PJ (au niveau de difficulté choisi)
+    /// et une carte PNJ (toujours en mode texte facile).
     /// Retourne la liste des chemins de fichiers créés.
     /// </summary>
     public List<string> GenerateCards(GenerationParameters parameters, string outputDirectory)
     {
         var generatedFiles = new List<string>();
+
+        // Paramètres identiques mais forcés en Level1_Easy pour la carte PNJ
+        var pnjParameters = new GenerationParameters
+        {
+            ArrowCount = parameters.ArrowCount,
+            CardCount = parameters.CardCount,
+            OutputFormat = parameters.OutputFormat,
+            ArrowStyle = parameters.ArrowStyle,
+            Difficulty = Difficulty.Level1_Easy
+        };
 
         for (int i = 1; i <= parameters.CardCount; i++)
         {
@@ -37,18 +49,33 @@ public class NavigationCardOrchestrator
 
             var course = _courseGenerator.Generate(parameters);
 
-            byte[] data = _cardRenderer.Render(course, parameters);
+            // ── Carte PJ (difficulté choisie) ──
+            byte[] pjData = _cardRenderer.Render(course, parameters, "Carte PJ");
 
-            string filePath = _fileExporter.Export(
-                data,
+            string pjPath = _fileExporter.Export(
+                pjData,
                 parameters.OutputFormat,
                 parameters.Difficulty,
                 i,
-                outputDirectory);
+                outputDirectory,
+                isPnj: false);
 
-            generatedFiles.Add(filePath);
+            generatedFiles.Add(pjPath);
+            Console.WriteLine($"    ✓ {Path.GetFileName(pjPath)}");
 
-            Console.WriteLine($"    ✓ {Path.GetFileName(filePath)}");
+            // ── Carte PNJ (toujours en mode texte facile) ──
+            byte[] pnjData = _cardRenderer.Render(course, pnjParameters, "Carte PNJ");
+
+            string pnjPath = _fileExporter.Export(
+                pnjData,
+                parameters.OutputFormat,
+                parameters.Difficulty,
+                i,
+                outputDirectory,
+                isPnj: true);
+
+            generatedFiles.Add(pnjPath);
+            Console.WriteLine($"    ✓ {Path.GetFileName(pnjPath)}");
         }
 
         return generatedFiles;
