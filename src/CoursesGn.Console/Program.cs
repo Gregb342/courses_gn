@@ -1,6 +1,7 @@
 using CoursesGn.Application.Services;
 using CoursesGn.Console.Input;
 using CoursesGn.Infrastructure.Export;
+using CoursesGn.Infrastructure.Persistence;
 using CoursesGn.Infrastructure.Rendering;
 
 // ══════════════════════════════════════════════════
@@ -15,14 +16,12 @@ Console.WriteLine("║   🧭  Générateur de Cartes de Navigation  🧭  ║")
 Console.WriteLine("╚═══════════════════════════════════════════════╝");
 Console.WriteLine();
 
-// ── Saisie des paramètres ──
-var inputHandler = new UserInputHandler();
-var parameters = inputHandler.GetParameters();
-
-// ── Police personnalisée (commenter la ligne pour revenir à la police par défaut) ──
+// ── Police personnalisée ──
 FontProvider.CustomFontFileName = "VoxPopuli.ttf";
 
 // ── Construction des services ──
+var registry = new CardRegistry();
+var inputHandler = new UserInputHandler();
 var courseGenerator = new CourseGeneratorService();
 var cardRenderer = new SkiaCardRenderer();
 var fileExporter = new FileExporter();
@@ -30,72 +29,132 @@ var fileExporter = new FileExporter();
 var orchestrator = new NavigationCardOrchestrator(
     courseGenerator,
     cardRenderer,
-    fileExporter);
+    fileExporter,
+    registry);
 
-// ── Création d'un répertoire unique par génération ──
-string styleName = parameters.ArrowStyle switch
+// ══════════════════════════════════════════════════
+//  Boucle principale du menu
+// ══════════════════════════════════════════════════
+
+bool running = true;
+while (running)
 {
-    CoursesGn.Domain.Enums.ArrowStyle.Clean     => "clean",
-    CoursesGn.Domain.Enums.ArrowStyle.HandDrawn  => "hand_drawn",
-    CoursesGn.Domain.Enums.ArrowStyle.Dotted     => "dotted",
-    _ => "style"
-};
-string difficultyName = parameters.Difficulty switch
-{
-    CoursesGn.Domain.Enums.Difficulty.Level1_Easy      => "facile",
-    CoursesGn.Domain.Enums.Difficulty.Level2_Normal     => "normal",
-    CoursesGn.Domain.Enums.Difficulty.Level3_Medium     => "moyen",
-    CoursesGn.Domain.Enums.Difficulty.Level4_Hard       => "difficile",
-    CoursesGn.Domain.Enums.Difficulty.Level5_Nightmare  => "cauchemar",
-    _ => "diff"
-};
-string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-string folderName = $"cartes_{styleName}_{difficultyName}_{timestamp}";
-string outputDirectory = Path.Combine(Directory.GetCurrentDirectory(), folderName);
-Directory.CreateDirectory(outputDirectory);
+    var choice = inputHandler.GetMenuChoice(registry.LastNumber, registry.TotalGenerated);
 
-string styleLabel = parameters.ArrowStyle switch
-{
-    CoursesGn.Domain.Enums.ArrowStyle.Clean     => "Clean",
-    CoursesGn.Domain.Enums.ArrowStyle.HandDrawn  => "Dessiné à la main",
-    CoursesGn.Domain.Enums.ArrowStyle.Dotted     => "Pointillé",
-    _ => parameters.ArrowStyle.ToString()
-};
+    switch (choice)
+    {
+        // ── [1] Générer des cartes ──
+        case UserInputHandler.MenuChoice.Generate:
+        {
+            var parameters = inputHandler.GetParameters();
 
-string difficultyLabel = parameters.Difficulty switch
-{
-    CoursesGn.Domain.Enums.Difficulty.Level1_Easy      => "1 - Facile",
-    CoursesGn.Domain.Enums.Difficulty.Level2_Normal     => "2 - Normal",
-    CoursesGn.Domain.Enums.Difficulty.Level3_Medium     => "3 - Moyen",
-    CoursesGn.Domain.Enums.Difficulty.Level4_Hard       => "4 - Difficile",
-    CoursesGn.Domain.Enums.Difficulty.Level5_Nightmare  => "5 - Cauchemar",
-    _ => parameters.Difficulty.ToString()
-};
+            string styleName = parameters.ArrowStyle switch
+            {
+                CoursesGn.Domain.Enums.ArrowStyle.Clean     => "clean",
+                CoursesGn.Domain.Enums.ArrowStyle.HandDrawn  => "hand_drawn",
+                CoursesGn.Domain.Enums.ArrowStyle.Dotted     => "dotted",
+                _ => "style"
+            };
+            string difficultyName = parameters.Difficulty switch
+            {
+                CoursesGn.Domain.Enums.Difficulty.Level1_Easy      => "facile",
+                CoursesGn.Domain.Enums.Difficulty.Level2_Normal     => "normal",
+                CoursesGn.Domain.Enums.Difficulty.Level3_Medium     => "moyen",
+                CoursesGn.Domain.Enums.Difficulty.Level4_Hard       => "difficile",
+                CoursesGn.Domain.Enums.Difficulty.Level5_Nightmare  => "cauchemar",
+                _ => "diff"
+            };
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string folderName = $"cartes_{styleName}_{difficultyName}_{timestamp}";
+            string outputDirectory = Path.Combine(Directory.GetCurrentDirectory(), folderName);
+            Directory.CreateDirectory(outputDirectory);
 
-// ── Résumé avant génération ──
-Console.WriteLine();
-Console.WriteLine("────────────────────────────────────────────────");
-Console.WriteLine($"  Cartes à générer : {parameters.CardCount}");
-Console.WriteLine($"  Flèches / carte  : {parameters.ArrowCount}");
-Console.WriteLine($"  Format           : {parameters.OutputFormat}");
-Console.WriteLine($"  Style            : {styleLabel}");
-Console.WriteLine($"  Difficulté       : {difficultyLabel}");
-Console.WriteLine($"  Répertoire       : {outputDirectory}");
-Console.WriteLine("────────────────────────────────────────────────");
-Console.WriteLine();
+            string styleLabel = parameters.ArrowStyle switch
+            {
+                CoursesGn.Domain.Enums.ArrowStyle.Clean     => "Clean",
+                CoursesGn.Domain.Enums.ArrowStyle.HandDrawn  => "Dessiné à la main",
+                CoursesGn.Domain.Enums.ArrowStyle.Dotted     => "Pointillé",
+                _ => parameters.ArrowStyle.ToString()
+            };
+            string difficultyLabel = parameters.Difficulty switch
+            {
+                CoursesGn.Domain.Enums.Difficulty.Level1_Easy      => "1 - Facile",
+                CoursesGn.Domain.Enums.Difficulty.Level2_Normal     => "2 - Normal",
+                CoursesGn.Domain.Enums.Difficulty.Level3_Medium     => "3 - Moyen",
+                CoursesGn.Domain.Enums.Difficulty.Level4_Hard       => "4 - Difficile",
+                CoursesGn.Domain.Enums.Difficulty.Level5_Nightmare  => "5 - Cauchemar",
+                _ => parameters.Difficulty.ToString()
+            };
 
-// ── Génération ──
-try
-{
-    var files = orchestrator.GenerateCards(parameters, outputDirectory);
+            Console.WriteLine("────────────────────────────────────────────────");
+            Console.WriteLine($"  Cartes à générer : {parameters.CardCount}");
+            Console.WriteLine($"  Flèches / carte  : {parameters.ArrowCount}");
+            Console.WriteLine($"  Format           : {parameters.OutputFormat}");
+            Console.WriteLine($"  Style            : {styleLabel}");
+            Console.WriteLine($"  Difficulté       : {difficultyLabel}");
+            Console.WriteLine($"  Numéros          : {registry.LastNumber + 1} → {registry.LastNumber + parameters.CardCount}");
+            Console.WriteLine($"  Répertoire       : {outputDirectory}");
+            Console.WriteLine("────────────────────────────────────────────────");
+            Console.WriteLine();
 
-    Console.WriteLine();
-    Console.WriteLine($"  ✅ {files.Count} carte(s) générée(s) avec succès !");
-    Console.WriteLine();
+            try
+            {
+                var files = orchestrator.GenerateCards(parameters, outputDirectory);
+                Console.WriteLine();
+                Console.WriteLine($"  ✅ {parameters.CardCount} carte(s) générée(s) avec succès ! ({files.Count} fichiers)");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine();
+                Console.WriteLine($"  ❌ Erreur : {ex.Message}");
+            }
+
+            Console.WriteLine();
+            break;
+        }
+
+        // ── [2] Voir l'historique ──
+        case UserInputHandler.MenuChoice.ViewHistory:
+        {
+            Console.WriteLine("────────────────────────────────────────────────");
+            Console.WriteLine($"  Compteur actuel   : {registry.LastNumber}");
+            Console.WriteLine($"  Cartes enregistrées : {registry.TotalGenerated}");
+            Console.WriteLine($"  Fichier registre  : cartes_registry.json");
+            Console.WriteLine($"  Fichier CSV       : cartes_registry.csv");
+            Console.WriteLine("────────────────────────────────────────────────");
+            Console.WriteLine();
+            break;
+        }
+
+        // ── [3] Remettre le compteur à zéro ──
+        case UserInputHandler.MenuChoice.ResetCounter:
+        {
+            Console.WriteLine($"  ⚠ Le compteur est actuellement à {registry.LastNumber}.");
+            Console.Write("  Confirmer la remise à zéro ? (oui / non) : ");
+            string? confirm = Console.ReadLine()?.Trim().ToLowerInvariant();
+            Console.WriteLine();
+
+            if (confirm == "oui" || confirm == "o")
+            {
+                registry.Reset();
+                Console.WriteLine("  ✅ Compteur remis à zéro. L'historique est conservé dans le CSV.");
+            }
+            else
+            {
+                Console.WriteLine("  Annulé.");
+            }
+
+            Console.WriteLine();
+            break;
+        }
+
+        // ── [0] Quitter ──
+        case UserInputHandler.MenuChoice.Quit:
+            running = false;
+            break;
+    }
 }
-catch (Exception ex)
-{
-    Console.WriteLine();
-    Console.WriteLine($"  ❌ Erreur : {ex.Message}");
-    Console.WriteLine();
-}
+
+Console.WriteLine("  À bientôt !");
+Console.WriteLine();
+

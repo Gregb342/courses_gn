@@ -15,6 +15,39 @@ public class UserInputHandler
     private const ArrowStyle DefaultArrowStyle = ArrowStyle.HandDrawn;
     private const Difficulty DefaultDifficulty = Difficulty.Level2_Normal;
 
+    public enum MenuChoice { Generate, ViewHistory, ResetCounter, Quit }
+
+    /// <summary>
+    /// Affiche le menu principal et retourne le choix de l'utilisateur.
+    /// </summary>
+    public MenuChoice GetMenuChoice(int lastNumber, int totalGenerated)
+    {
+        while (true)
+        {
+            System.Console.WriteLine("  Que souhaitez-vous faire ?");
+            System.Console.WriteLine($"    [1] Générer des cartes  (prochain n° : {lastNumber + 1})");
+            System.Console.WriteLine($"    [2] Voir l'historique   ({totalGenerated} carte(s) enregistrée(s))");
+            System.Console.WriteLine( "    [3] Remettre le compteur à zéro");
+            System.Console.WriteLine( "    [0] Quitter");
+            System.Console.Write("  Choix : ");
+
+            string? input = System.Console.ReadLine()?.Trim();
+            System.Console.WriteLine();
+
+            switch (input)
+            {
+                case "1": return MenuChoice.Generate;
+                case "2": return MenuChoice.ViewHistory;
+                case "3": return MenuChoice.ResetCounter;
+                case "0": return MenuChoice.Quit;
+                default:
+                    System.Console.WriteLine("    ⚠ Veuillez entrer 0, 1, 2 ou 3.");
+                    System.Console.WriteLine();
+                    break;
+            }
+        }
+    }
+
     /// <summary>
     /// Demande à l'utilisateur tous les paramètres de génération.
     /// </summary>

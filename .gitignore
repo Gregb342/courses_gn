@@ -16,6 +16,13 @@ Thumbs.db
 # Cartes générées
 cartes_*/
 
+# Registre local (compteur + logs)
+cartes_registry.json
+cartes_registry.csv
+
+# Publish
+publish/
+
 # Rider
 .idea/
 *.sln.iml
