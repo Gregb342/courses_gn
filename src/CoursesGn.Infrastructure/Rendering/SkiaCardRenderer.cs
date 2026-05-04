@@ -28,6 +28,133 @@ public class SkiaCardRenderer : ICardRenderer
         };
     }
 
+    public byte[] RenderCombined(
+        NavigationCourse course,
+        GenerationParameters pjParams,
+        GenerationParameters pnjParams,
+        int cardNumber)
+    {
+        return pjParams.OutputFormat switch
+        {
+            OutputFormat.Jpg => RenderCombinedAsImage(course, pjParams, pnjParams, cardNumber),
+            OutputFormat.Pdf => RenderCombinedAsPdf(course, pjParams, pnjParams, cardNumber),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(pjParams.OutputFormat), pjParams.OutputFormat, "Format non supporté.")
+        };
+    }
+
+    // ──────────────────────────────────────────────
+    //  Rendu A4 paysage combiné — JPG
+    // ──────────────────────────────────────────────
+
+    private byte[] RenderCombinedAsImage(
+        NavigationCourse course,
+        GenerationParameters pjParams,
+        GenerationParameters pnjParams,
+        int cardNumber)
+    {
+        var imageInfo = new SKImageInfo(
+            RenderingConstants.A4LandscapeWidthPixels,
+            RenderingConstants.A4LandscapeHeightPixels);
+
+        using var surface = SKSurface.Create(imageInfo);
+        var canvas = surface.Canvas;
+        canvas.Clear(SKColors.White);
+
+        float scale = RenderingConstants.HalfCardScale;
+        int halfW = RenderingConstants.HalfPageWidthPixels;
+
+        // ── Moitié gauche : PNJ ──
+        canvas.Save();
+        canvas.ClipRect(new SKRect(0, 0, halfW, RenderingConstants.A4LandscapeHeightPixels));
+        canvas.Scale(scale, scale);
+        RenderContent(canvas, course, pnjParams, $"Carte PNJ {cardNumber}");
+        canvas.Restore();
+
+        // ── Moitié droite : PJ ──
+        canvas.Save();
+        canvas.Translate(halfW, 0);
+        canvas.ClipRect(new SKRect(0, 0, halfW, RenderingConstants.A4LandscapeHeightPixels));
+        canvas.Scale(scale, scale);
+        RenderContent(canvas, course, pjParams, $"Carte PJ {cardNumber}");
+        canvas.Restore();
+
+        // ── Trait de séparation central ──
+        using var sepPaint = new SKPaint
+        {
+            Color = new SKColor(180, 180, 180),
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = RenderingConstants.SeparatorLineWidth,
+            IsAntialias = true,
+            PathEffect = SKPathEffect.CreateDash(new float[] { 12f, 6f }, 0f)
+        };
+        canvas.DrawLine(halfW, 0, halfW, RenderingConstants.A4LandscapeHeightPixels, sepPaint);
+
+        using var image = surface.Snapshot();
+        using var data = image.Encode(SKEncodedImageFormat.Jpeg, RenderingConstants.JpegQuality);
+        return data.ToArray();
+    }
+
+    // ──────────────────────────────────────────────
+    //  Rendu A4 paysage combiné — PDF
+    // ──────────────────────────────────────────────
+
+    private byte[] RenderCombinedAsPdf(
+        NavigationCourse course,
+        GenerationParameters pjParams,
+        GenerationParameters pnjParams,
+        int cardNumber)
+    {
+        var memoryStream = new MemoryStream();
+
+        using (var skStream = new SKManagedWStream(memoryStream))
+        using (var document = SKDocument.CreatePdf(skStream))
+        {
+            var canvas = document.BeginPage(
+                RenderingConstants.A4LandscapeWidthPoints,
+                RenderingConstants.A4LandscapeHeightPoints);
+
+            canvas.Clear(SKColors.White);
+
+            float halfWPt = RenderingConstants.HalfPageWidthPoints;
+            // Scale pour projeter le canvas pixel (1240px de haut) en espace points (595.28pt de haut)
+            // On veut que A4WidthPixels → halfWPt  et  A4HeightPixels → A4LandscapeHeightPoints
+            float scaleX = halfWPt / RenderingConstants.A4WidthPixels;
+            float scaleY = RenderingConstants.A4LandscapeHeightPoints / RenderingConstants.A4HeightPixels;
+
+            // ── Moitié gauche : PNJ ──
+            canvas.Save();
+            canvas.ClipRect(new SKRect(0, 0, halfWPt, RenderingConstants.A4LandscapeHeightPoints));
+            canvas.Scale(scaleX, scaleY);
+            RenderContent(canvas, course, pnjParams, $"Carte PNJ {cardNumber}");
+            canvas.Restore();
+
+            // ── Moitié droite : PJ ──
+            canvas.Save();
+            canvas.Translate(halfWPt, 0);
+            canvas.ClipRect(new SKRect(0, 0, halfWPt, RenderingConstants.A4LandscapeHeightPoints));
+            canvas.Scale(scaleX, scaleY);
+            RenderContent(canvas, course, pjParams, $"Carte PJ {cardNumber}");
+            canvas.Restore();
+
+            // ── Trait de séparation central ──
+            using var sepPaint = new SKPaint
+            {
+                Color = new SKColor(180, 180, 180),
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = RenderingConstants.SeparatorLineWidth,
+                IsAntialias = true,
+                PathEffect = SKPathEffect.CreateDash(new float[] { 6f, 3f }, 0f)
+            };
+            canvas.DrawLine(halfWPt, 0, halfWPt, RenderingConstants.A4LandscapeHeightPoints, sepPaint);
+
+            document.EndPage();
+            document.Close();
+        }
+
+        return memoryStream.ToArray();
+    }
+
     // ──────────────────────────────────────────────
     //  Rendu JPG
     // ──────────────────────────────────────────────
@@ -40,6 +167,7 @@ public class SkiaCardRenderer : ICardRenderer
 
         using var surface = SKSurface.Create(imageInfo);
         var canvas = surface.Canvas;
+        canvas.Clear(SKColors.White);
 
         RenderContent(canvas, course, parameters, cardLabel);
 
@@ -63,6 +191,8 @@ public class SkiaCardRenderer : ICardRenderer
                 var canvas = document.BeginPage(
                     RenderingConstants.A4WidthPoints,
                     RenderingConstants.A4HeightPoints);
+
+                canvas.Clear(SKColors.White);
 
                 float scaleX = RenderingConstants.A4WidthPoints / RenderingConstants.A4WidthPixels;
                 float scaleY = RenderingConstants.A4HeightPoints / RenderingConstants.A4HeightPixels;
@@ -88,8 +218,6 @@ public class SkiaCardRenderer : ICardRenderer
         GenerationParameters parameters,
         string cardLabel)
     {
-        canvas.Clear(SKColors.White);
-
         // Dessiner le label (Carte PJ / Carte PNJ) en haut à droite
         DrawCardLabel(canvas, cardLabel);
 

@@ -8,7 +8,7 @@ namespace CoursesGn.Infrastructure.Export;
 /// </summary>
 public class FileExporter : IFileExporter
 {
-    public string Export(byte[] data, OutputFormat format, Difficulty difficulty, int index, string outputDirectory, bool isPnj = false)
+    public string Export(byte[] data, OutputFormat format, Difficulty difficulty, int index, string outputDirectory)
     {
         string extension = format switch
         {
@@ -27,8 +27,7 @@ public class FileExporter : IFileExporter
             _ => "diff"
         };
 
-        string pnjSuffix = isPnj ? "_pnj" : "";
-        string fileName = $"carte_nav_{difficultyTag}{pnjSuffix}_{index:D3}.{extension}";
+        string fileName = $"carte_nav_{difficultyTag}_{index:D3}.{extension}";
         string filePath = Path.Combine(outputDirectory, fileName);
 
         File.WriteAllBytes(filePath, data);

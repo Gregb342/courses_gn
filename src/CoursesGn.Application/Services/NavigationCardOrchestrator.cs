@@ -54,56 +54,29 @@ public class NavigationCardOrchestrator
 
             var course = _courseGenerator.Generate(parameters);
 
-            // ── Carte PJ (difficulté choisie) ──
-            byte[] pjData = _cardRenderer.Render(course, parameters, $"Carte PJ {cardNumber}");
+            // ── Carte combinée A4 paysage (PNJ gauche + PJ droite) ──
+            byte[] combinedData = _cardRenderer.RenderCombined(course, parameters, pnjParameters, cardNumber);
 
-            string pjPath = _fileExporter.Export(
-                pjData,
+            string combinedPath = _fileExporter.Export(
+                combinedData,
                 parameters.OutputFormat,
                 parameters.Difficulty,
                 cardNumber,
-                outputDirectory,
-                isPnj: false);
+                outputDirectory);
 
-            generatedFiles.Add(pjPath);
-            Console.WriteLine($"    ✓ {Path.GetFileName(pjPath)}");
+            generatedFiles.Add(combinedPath);
+            Console.WriteLine($"    ✓ {Path.GetFileName(combinedPath)}");
 
             _registry.RecordCard(new CardRegistryEntry
             {
                 CardNumber = cardNumber,
-                Type = "PJ",
+                Type = "PJ+PNJ",
                 Difficulty = parameters.Difficulty,
                 ArrowCount = parameters.ArrowCount,
                 ArrowStyle = parameters.ArrowStyle,
                 OutputFormat = parameters.OutputFormat,
                 GeneratedAt = DateTime.Now,
-                FileName = Path.GetFileName(pjPath)
-            });
-
-            // ── Carte PNJ (toujours en mode texte facile) ──
-            byte[] pnjData = _cardRenderer.Render(course, pnjParameters, $"Carte PNJ {cardNumber}");
-
-            string pnjPath = _fileExporter.Export(
-                pnjData,
-                parameters.OutputFormat,
-                parameters.Difficulty,
-                cardNumber,
-                outputDirectory,
-                isPnj: true);
-
-            generatedFiles.Add(pnjPath);
-            Console.WriteLine($"    ✓ {Path.GetFileName(pnjPath)}");
-
-            _registry.RecordCard(new CardRegistryEntry
-            {
-                CardNumber = cardNumber,
-                Type = "PNJ",
-                Difficulty = parameters.Difficulty,
-                ArrowCount = parameters.ArrowCount,
-                ArrowStyle = parameters.ArrowStyle,
-                OutputFormat = parameters.OutputFormat,
-                GeneratedAt = DateTime.Now,
-                FileName = Path.GetFileName(pnjPath)
+                FileName = Path.GetFileName(combinedPath)
             });
         }
 

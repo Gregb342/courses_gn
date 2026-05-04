@@ -8,13 +8,30 @@ public static class RenderingConstants
     // ── Police par défaut ──
     public const string DefaultFontFamily = "Calibri";
 
-    // ── Dimensions A4 en pixels (150 DPI) ──
+    // ── Dimensions A4 portrait en pixels (150 DPI) ──
     public const int A4WidthPixels = 1240;
     public const int A4HeightPixels = 1754;
 
-    // ── Dimensions A4 en points (72 DPI, pour PDF) ──
+    // ── Dimensions A4 portrait en points (72 DPI, pour PDF) ──
     public const float A4WidthPoints = 595.28f;
     public const float A4HeightPoints = 841.89f;
+
+    // ── Dimensions A4 paysage en pixels (150 DPI) ──
+    public const int A4LandscapeWidthPixels = 1754;
+    public const int A4LandscapeHeightPixels = 1240;
+    public const int HalfPageWidthPixels = 877; // 1754 / 2
+
+    // ── Dimensions A4 paysage en points (72 DPI, pour PDF) ──
+    public const float A4LandscapeWidthPoints = 841.89f;
+    public const float A4LandscapeHeightPoints = 595.28f;
+    public const float HalfPageWidthPoints = 420.945f; // 841.89 / 2
+
+    // ── Scale pour projeter un A4 portrait dans une moitié A5 paysage ──
+    // 877px / 1240px ≈ 0.7073 (pixels) | 420.945pt / 595.28pt ≈ 0.7073 (points)
+    public const float HalfCardScale = 877f / 1240f;
+
+    // ── Séparateur central ──
+    public const float SeparatorLineWidth = 2f;
 
     // ── Marges ──
     public const int Margin = 80;
