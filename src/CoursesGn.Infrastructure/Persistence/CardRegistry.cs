@@ -55,11 +55,7 @@ public class CardRegistry : ICardRegistry
 
     public void RecordCard(CardRegistryEntry entry)
     {
-        // On n'incrémente le compteur que pour les cartes PJ
-        // (PJ et PNJ partagent le même numéro)
-        if (entry.Type == "PJ")
-            _data.LastNumber = entry.CardNumber;
-
+        _data.LastNumber = entry.CardNumber;
         _data.Entries.Add(entry);
         Save();
     }

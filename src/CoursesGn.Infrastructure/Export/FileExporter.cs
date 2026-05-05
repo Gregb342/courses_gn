@@ -32,6 +32,11 @@ public class FileExporter : IFileExporter
 
         File.WriteAllBytes(filePath, data);
 
+        // Vérification : le fichier doit exister et être non vide
+        var info = new FileInfo(filePath);
+        if (!info.Exists || info.Length == 0)
+            throw new IOException($"Le fichier '{fileName}' n'a pas été correctement écrit (taille = {info.Length} octet(s)).");
+
         return filePath;
     }
 }

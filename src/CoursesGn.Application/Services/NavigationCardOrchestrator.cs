@@ -35,6 +35,7 @@ public class NavigationCardOrchestrator
     public List<string> GenerateCards(GenerationParameters parameters, string outputDirectory)
     {
         var generatedFiles = new List<string>();
+        var generatedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Paramètres identiques mais forcés en Level1_Easy pour la carte PNJ
         var pnjParameters = new GenerationParameters
@@ -64,8 +65,14 @@ public class NavigationCardOrchestrator
                 cardNumber,
                 outputDirectory);
 
+            string combinedFileName = Path.GetFileName(combinedPath);
+            if (!generatedFileNames.Add(combinedFileName))
+                throw new InvalidOperationException(
+                    $"Doublon détecté : le fichier '{combinedFileName}' a déjà été généré dans ce lot. " +
+                    "Vérifiez le registre des cartes (option 3 pour remettre le compteur à zéro).");
+
             generatedFiles.Add(combinedPath);
-            Console.WriteLine($"    ✓ {Path.GetFileName(combinedPath)}");
+            Console.WriteLine($"    ✓ {combinedFileName}");
 
             _registry.RecordCard(new CardRegistryEntry
             {
